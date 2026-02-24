@@ -26,12 +26,13 @@ import (
 	"go.uber.org/zap"
 )
 
+var defaultUserAgent = "payspace-go/" + Version
+
 const (
-	defaultUserAgent = "payspace.com"
-	defaultTimeout   = 30 * time.Second
-	defaultAPIVer    = "v2.0"
-	defaultPageSize  = 100
-	maxPageSize      = 100
+	defaultTimeout  = 30 * time.Second
+	defaultAPIVer   = "v2.0"
+	defaultPageSize = 100
+	maxPageSize     = 100
 )
 
 // Environment selects between staging and production base URLs.

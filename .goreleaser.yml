@@ -1,0 +1,41 @@
+version: 2
+
+project_name: payspace-go
+
+before:
+  hooks:
+    - go mod tidy
+    - go vet ./...
+    - go test ./...
+
+builds:
+  - skip: true
+
+release:
+  prerelease: auto
+  draft: false
+  name_template: "v{{.Version}}"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^chore:"
+      - "^ci:"
+      - "^Merge pull request"
+      - "^Merge branch"
+  groups:
+    - title: "New Features"
+      regexp: '^.*?feat(\(.+\))?:.*$'
+      order: 0
+    - title: "Bug Fixes"
+      regexp: '^.*?fix(\(.+\))?:.*$'
+      order: 1
+    - title: "Performance"
+      regexp: '^.*?perf(\(.+\))?:.*$'
+      order: 2
+    - title: "Documentation"
+      regexp: '^.*?docs?(\(.+\))?:.*$'
+      order: 3
+    - title: "Other Changes"
+      order: 999

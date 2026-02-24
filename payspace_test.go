@@ -71,8 +71,9 @@ func TestNewClient_DefaultConfig(t *testing.T) {
 	if client.apiVersion != "v2.0" {
 		t.Errorf("expected api version v2.0, got %s", client.apiVersion)
 	}
-	if client.userAgent != "payspace.com" {
-		t.Errorf("expected user agent payspace.com, got %s", client.userAgent)
+	expectedUA := "payspace-go/" + Version
+	if client.userAgent != expectedUA {
+		t.Errorf("expected user agent %s, got %s", expectedUA, client.userAgent)
 	}
 }
 
