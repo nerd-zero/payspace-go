@@ -85,7 +85,7 @@ echo "$NEXT" > "$VERSION_FILE"
 # Commit and tag.
 git -C "$REPO_ROOT" add VERSION
 git -C "$REPO_ROOT" commit -m "chore: bump version to $NEXT"
-git -C "$REPO_ROOT" tag "$TAG"
+git -C "$REPO_ROOT" tag -a "$TAG" -m "Release $TAG"
 
 echo ""
 echo "Created commit and tag $TAG"
