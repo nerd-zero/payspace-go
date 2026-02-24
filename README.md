@@ -104,7 +104,7 @@ All options are passed to `NewClient` as functional options:
 | `WithLogger(logger)` | Custom `*zap.Logger` instance | auto-created |
 | `WithHTTPClient(client)` | Custom `*http.Client` | default |
 | `WithAPIVersion(ver)` | API version string | `"v2.0"` |
-| `WithUserAgent(ua)` | User-Agent header | `"payspace.com"` |
+| `WithUserAgent(ua)` | User-Agent header | `"payspace-go/{version}"` |
 | `WithAPIBaseURL(url)` | Override API base URL | environment-based |
 | `WithIdentityURL(url)` | Override identity/auth URL | environment-based |
 
@@ -313,11 +313,33 @@ See the [`examples/`](examples/) directory for complete, runnable programs:
 ## Contributing
 
 ```bash
-# Run tests
-go test ./...
+make test    # run tests with race detector
+make vet     # run go vet
+make lint    # run vet + test
+```
 
-# Vet
-go vet ./...
+## Releasing
+
+The SDK uses [CalVer](https://calver.org/) (`0.YYYYMM.MICRO`) for versioning. The version is stored in the `VERSION` file and embedded into the SDK at compile time.
+
+To create a new release:
+
+```bash
+make release
+```
+
+This will:
+1. Bump the version based on the current date (same month increments MICRO, new month resets to `.001`)
+2. Commit the updated `VERSION` file
+3. Create a git tag (`v0.YYYYMM.MICRO`)
+4. Push the commit and tag to GitHub
+
+GitHub Actions will then automatically create a GitHub Release with a changelog.
+
+To preview the next version without making changes:
+
+```bash
+./scripts/version.sh --dry-run
 ```
 
 ## License
