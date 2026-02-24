@@ -90,6 +90,5 @@ git -C "$REPO_ROOT" tag "$TAG"
 echo ""
 echo "Created commit and tag $TAG"
 
-git -C "$REPO_ROOT" push origin main
-git -C "$REPO_ROOT" push origin "$TAG"
+git -C "$REPO_ROOT" push --follow-tags origin main
 echo "Pushed to remote."
