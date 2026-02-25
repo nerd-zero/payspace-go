@@ -34,6 +34,9 @@ changelog:
     - title: "Performance"
       regexp: '^.*?perf(\(.+\))?:.*$'
       order: 2
+    - title: "Enhancements"
+      regexp: '^.*?enhancement?(\(.+\))?:.*$'
+      order: 3
     - title: "Documentation"
       regexp: '^.*?docs?(\(.+\))?:.*$'
       order: 3

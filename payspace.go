@@ -361,13 +361,31 @@ type Company struct {
 	CompanyCode string `json:"company_code"`
 }
 
-// Companies returns the list of companies the client has access to.
-// This is populated after the first successful authentication.
+// Authenticate eagerly performs the OAuth token exchange if not already
+// authenticated. This is optional — the client authenticates lazily on
+// the first API call. Call this to pre-populate authentication metadata
+// such as the company list returned by GroupCompanies.
+func (c *Client) Authenticate(ctx context.Context) error {
+	return c.auth.ensureToken(ctx)
+}
+
+// GroupCompanies returns the list of company groups the client has access to.
+// If the client has not yet authenticated, this triggers authentication.
+func (c *Client) GroupCompanies(ctx context.Context) ([]GroupCompany, error) {
+	if err := c.auth.ensureToken(ctx); err != nil {
+		return nil, err
+	}
+	c.auth.mu.RLock()
+	defer c.auth.mu.RUnlock()
+	return c.auth.companies, nil
+}
+
+// Deprecated: Use GroupCompanies instead.
 func (c *Client) Companies_() ([]GroupCompany, error) {
 	c.auth.mu.RLock()
 	defer c.auth.mu.RUnlock()
 	if c.auth.companies == nil {
-		return nil, fmt.Errorf("payspace: not authenticated yet; make an API call first")
+		return nil, fmt.Errorf("payspace: not authenticated yet; use GroupCompanies(ctx) or Authenticate(ctx) first")
 	}
 	return c.auth.companies, nil
 }

@@ -64,10 +64,10 @@ The SDK uses OAuth 2.0 client credentials flow. Obtain your `clientID` and `clie
 
 Authentication is handled transparently -- the SDK acquires a token on the first API call and refreshes it automatically (5-minute buffer before expiry). You never need to manage tokens manually.
 
-After the first API call, you can access the list of companies your credentials have access to:
+You can access the list of companies your credentials have access to at any time -- `GroupCompanies` authenticates automatically if needed:
 
 ```go
-groups, err := client.Companies_()
+groups, err := client.GroupCompanies(ctx)
 if err != nil {
     log.Fatal(err)
 }
@@ -75,6 +75,14 @@ for _, group := range groups {
     for _, company := range group.Companies {
         fmt.Printf("%s (ID: %d)\n", company.CompanyName, company.CompanyID)
     }
+}
+```
+
+You can also eagerly authenticate without fetching company data:
+
+```go
+if err := client.Authenticate(ctx); err != nil {
+    log.Fatal(err)
 }
 ```
 

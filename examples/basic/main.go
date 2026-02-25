@@ -37,6 +37,20 @@ func main() {
 
 	ctx := context.Background()
 
+	// Get the list of accessible companies (authenticates automatically).
+	groups, err := client.GroupCompanies(ctx)
+	if err != nil {
+		log.Fatalf("Failed to get companies: %v", err)
+	}
+
+	fmt.Printf("Accessible companies:\n")
+	for _, group := range groups {
+		fmt.Printf("  Group: %s\n", group.GroupDescription)
+		for _, c := range group.Companies {
+			fmt.Printf("    - %s (ID: %d, Code: %s)\n", c.CompanyName, c.CompanyID, c.CompanyCode)
+		}
+	}
+
 	// List the first 10 employees sorted by surname.
 	query := payspace.NewQuery().Top(10).OrderBy("Surname asc")
 	employees, resp, err := client.Employees.List(ctx, companyID, query)
@@ -44,25 +58,11 @@ func main() {
 		log.Fatalf("Failed to list employees: %v", err)
 	}
 
-	fmt.Printf("Fetched %d employees (rate limit: %d/%d)\n\n",
+	fmt.Printf("\nFetched %d employees (rate limit: %d/%d)\n\n",
 		len(employees), resp.RateLimit.Remaining, resp.RateLimit.Limit)
 
 	for _, emp := range employees {
 		fmt.Printf("  %s %s (ID: %d, Number: %s)\n",
 			emp.FirstName, emp.Surname, emp.EmployeeId, emp.EmployeeNumber)
-	}
-
-	// After the first API call, you can access the companies list from the auth token.
-	groups, err := client.Companies_()
-	if err != nil {
-		log.Fatalf("Failed to get companies: %v", err)
-	}
-
-	fmt.Printf("\nAccessible companies:\n")
-	for _, group := range groups {
-		fmt.Printf("  Group: %s\n", group.GroupDescription)
-		for _, c := range group.Companies {
-			fmt.Printf("    - %s (ID: %d, Code: %s)\n", c.CompanyName, c.CompanyID, c.CompanyCode)
-		}
 	}
 }
