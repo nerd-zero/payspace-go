@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 )
@@ -222,6 +223,111 @@ func TestClient_ODataURLv1(t *testing.T) {
 	expected := client.apiBaseURL + "/odata/v1.0/42/EmployeePayslip/comment"
 	if url != expected {
 		t.Errorf("expected %s, got %s", expected, url)
+	}
+}
+
+func TestClient_Authenticate(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("POST /connect/token", func(w http.ResponseWriter, r *http.Request) {
+		writeJSON(w, http.StatusOK, tokenResponse{
+			AccessToken: "test-token",
+			ExpiresIn:   3600,
+			TokenType:   "Bearer",
+			GroupCompanies: []GroupCompany{
+				{GroupID: 1, GroupDescription: "Test Group", Companies: []Company{
+					{CompanyID: 100, CompanyName: "Acme Corp"},
+				}},
+			},
+		})
+	})
+	srv := httptest.NewServer(mux)
+	t.Cleanup(srv.Close)
+
+	client, err := NewClient("test-id", "test-secret",
+		WithIdentityURL(srv.URL),
+		WithAPIBaseURL(srv.URL),
+		WithLogger(testNopLogger()),
+		WithRetry(0, 0),
+	)
+	if err != nil {
+		t.Fatalf("failed to create client: %v", err)
+	}
+
+	if err := client.Authenticate(context.Background()); err != nil {
+		t.Fatalf("Authenticate failed: %v", err)
+	}
+
+	groups, err := client.GroupCompanies(context.Background())
+	if err != nil {
+		t.Fatalf("GroupCompanies failed: %v", err)
+	}
+	if len(groups) != 1 {
+		t.Fatalf("expected 1 group, got %d", len(groups))
+	}
+	if groups[0].GroupID != 1 {
+		t.Errorf("expected GroupID=1, got %d", groups[0].GroupID)
+	}
+	if len(groups[0].Companies) != 1 || groups[0].Companies[0].CompanyID != 100 {
+		t.Errorf("expected CompanyID=100, got %v", groups[0].Companies)
+	}
+}
+
+func TestClient_GroupCompanies_TriggersAuth(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("POST /connect/token", func(w http.ResponseWriter, r *http.Request) {
+		writeJSON(w, http.StatusOK, tokenResponse{
+			AccessToken: "auto-token",
+			ExpiresIn:   3600,
+			TokenType:   "Bearer",
+			GroupCompanies: []GroupCompany{
+				{GroupID: 2, GroupDescription: "Auto Group"},
+			},
+		})
+	})
+	srv := httptest.NewServer(mux)
+	t.Cleanup(srv.Close)
+
+	client, err := NewClient("test-id", "test-secret",
+		WithIdentityURL(srv.URL),
+		WithAPIBaseURL(srv.URL),
+		WithLogger(testNopLogger()),
+		WithRetry(0, 0),
+	)
+	if err != nil {
+		t.Fatalf("failed to create client: %v", err)
+	}
+
+	// Call GroupCompanies WITHOUT calling Authenticate first.
+	groups, err := client.GroupCompanies(context.Background())
+	if err != nil {
+		t.Fatalf("GroupCompanies failed: %v", err)
+	}
+	if len(groups) != 1 {
+		t.Fatalf("expected 1 group, got %d", len(groups))
+	}
+	if groups[0].GroupDescription != "Auto Group" {
+		t.Errorf("expected 'Auto Group', got %q", groups[0].GroupDescription)
+	}
+}
+
+func TestClient_GroupCompanies_AlreadyAuthenticated(t *testing.T) {
+	mux := http.NewServeMux()
+	_, client := testServerAndClient(t, mux)
+
+	// Pre-seed companies (testServerAndClient already seeds a token).
+	client.auth.companies = []GroupCompany{
+		{GroupID: 1, GroupDescription: "Seeded Group"},
+	}
+
+	groups, err := client.GroupCompanies(context.Background())
+	if err != nil {
+		t.Fatalf("GroupCompanies failed: %v", err)
+	}
+	if len(groups) != 1 {
+		t.Fatalf("expected 1 group, got %d", len(groups))
+	}
+	if groups[0].GroupDescription != "Seeded Group" {
+		t.Errorf("expected 'Seeded Group', got %q", groups[0].GroupDescription)
 	}
 }
 

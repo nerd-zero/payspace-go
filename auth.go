@@ -80,6 +80,12 @@ func (tm *tokenManager) ForceRefresh(ctx context.Context) (string, error) {
 	return tm.refresh(ctx)
 }
 
+// ensureToken ensures a valid token exists, triggering a refresh if necessary.
+func (tm *tokenManager) ensureToken(ctx context.Context) error {
+	_, err := tm.Token(ctx)
+	return err
+}
+
 func (tm *tokenManager) refresh(ctx context.Context) (string, error) {
 	tm.mu.Lock()
 	defer tm.mu.Unlock()
