@@ -40,15 +40,20 @@ type EmployeeLeaveSetupEntitlement struct {
 
 // EmployeeLeaveApplication represents a leave application record.
 type EmployeeLeaveApplication struct {
-	LeaveApplicationId int      `json:"LeaveApplicationId"`
-	EmployeeNumber     string   `json:"EmployeeNumber"`
-	LeaveType          string   `json:"LeaveType,omitempty"`
-	StartDate          string   `json:"StartDate,omitempty"`
-	EndDate            string   `json:"EndDate,omitempty"`
-	NumberOfDays       *float64 `json:"NumberOfDays,omitempty"`
-	Status             string   `json:"Status,omitempty"`
-	Reason             string   `json:"Reason,omitempty"`
-	ApprovedBy         string   `json:"ApprovedBy,omitempty"`
+	LeaveAdjustmentId    int      `json:"LeaveAdjustmentId"`
+	EmployeeNumber       string   `json:"EmployeeNumber"`
+	FullName             string   `json:"FullName,omitempty"`
+	LeaveBucket          string   `json:"LeaveBucket,omitempty"`
+	LeaveType            string   `json:"LeaveType,omitempty"`
+	LeaveCompanyRun      string   `json:"LeaveCompanyRun,omitempty"`
+	NoOfDays             *float64 `json:"NoOfDays,omitempty"`
+	Comments             string   `json:"Comments,omitempty"`
+	Reference            string   `json:"Reference,omitempty"`
+	LeaveReason          string   `json:"LeaveReason,omitempty"`
+	LeaveStartDate       string   `json:"LeaveStartDate,omitempty"`
+	LeaveEndDate         string   `json:"LeaveEndDate,omitempty"`
+	LeaveStatus          string   `json:"LeaveStatus,omitempty"`
+	LeaveTransactionType string   `json:"LeaveTransactionType,omitempty"`
 }
 
 // EmployeeLeaveService handles leave-related API operations.
