@@ -69,16 +69,38 @@ type EmployeeEmploymentStatus struct {
 
 // EmployeePosition represents an employee's position record.
 type EmployeePosition struct {
-	EmployeePositionId           int    `json:"EmployeePositionId"`
-	EmployeeNumber               string `json:"EmployeeNumber"`
-	OrganizationPosition         string `json:"OrganizationPosition,omitempty"`
-	OrganizationPositionWithCode string `json:"OrganizationPositionWithCode,omitempty"`
-	Department                   string `json:"Department,omitempty"`
-	JobTitle                     string `json:"JobTitle,omitempty"`
-	EffectiveDate                string `json:"EffectiveDate,omitempty"`
-	ManagerEmployeeNumber        string `json:"ManagerEmployeeNumber,omitempty"`
-	CostCentre                   string `json:"CostCentre,omitempty"`
-	Division                     string `json:"Division,omitempty"`
+	EmployeePositionId              int    `json:"EmployeePositionId"`
+	EmployeeNumber                  string `json:"EmployeeNumber"`
+	FullName                        string `json:"FullName,omitempty"`
+	EffectiveDate                   string `json:"EffectiveDate,omitempty"`
+	OrganizationPosition            string `json:"OrganizationPosition,omitempty"`
+	OrganizationPositionId          int    `json:"OrganizationPositionId,omitempty"`
+	OrganizationPositionWithCode    string `json:"OrganizationPositionWithCode,omitempty"`
+	PositionType                    string `json:"PositionType,omitempty"`
+	Grade                           string `json:"Grade,omitempty"`
+	OccupationalLevel               string `json:"OccupationalLevel,omitempty"`
+	DirectlyReportsPositionOverride string `json:"DirectlyReportsPositionOverride,omitempty"`
+	DirectlyReportsPosition         string `json:"DirectlyReportsPosition,omitempty"`
+	OrganizationGroup               string `json:"OrganizationGroup,omitempty"`
+	OrganizationGroupDescription    string `json:"OrganizationGroupDescription,omitempty"`
+	OrganizationRegion              string `json:"OrganizationRegion,omitempty"`
+	PayPoint                        string `json:"PayPoint,omitempty"`
+	DirectlyReportsEmployee         string `json:"DirectlyReportsEmployee,omitempty"`
+	DirectlyReportsEmployeeNumber   string `json:"DirectlyReportsEmployeeNumber,omitempty"`
+	EmploymentCategory              string `json:"EmploymentCategory,omitempty"`
+	EmploymentSubCategory           string `json:"EmploymentSubCategory,omitempty"`
+	Administrator                   string `json:"Administrator,omitempty"`
+	AdministratorEmployeeNumber     string `json:"AdministratorEmployeeNumber,omitempty"`
+	WorkflowRole                    string `json:"WorkflowRole,omitempty"`
+	GeneralLedger                   string `json:"GeneralLedger,omitempty"`
+	TradeUnion                      string `json:"TradeUnion,omitempty"`
+	IsPromotion                     *bool  `json:"IsPromotion,omitempty"`
+	Roster                          string `json:"Roster,omitempty"`
+	Job                             string `json:"Job,omitempty"`
+	Comments                        string `json:"Comments,omitempty"`
+	AltPositionName                 string `json:"AltPositionName,omitempty"`
+	PositionEffectiveDate           string `json:"PositionEffectiveDate,omitempty"`
+	CustomTradeUnion                string `json:"CustomTradeUnion,omitempty"`
 }
 
 // EmployeeService handles employee-related API operations.
