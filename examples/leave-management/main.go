@@ -74,10 +74,10 @@ func main() {
 	application := &payspace.EmployeeLeaveApplication{
 		EmployeeNumber: "EMP001",
 		LeaveType:      "Annual",
-		StartDate:      "2025-06-01",
-		EndDate:        "2025-06-03",
-		NumberOfDays:   &days,
-		Reason:         "Family vacation",
+		LeaveStartDate: "2025-06-01",
+		LeaveEndDate:   "2025-06-03",
+		NoOfDays:       &days,
+		LeaveReason:    "Family vacation",
 	}
 
 	created, _, err := client.EmployeeLeave.CreateLeaveApplication(ctx, companyID, application)
@@ -94,12 +94,12 @@ func main() {
 		log.Fatalf("Failed to create leave application: %v", err)
 	}
 	fmt.Printf("  Created leave application ID: %d (Status: %s)\n",
-		created.LeaveApplicationId, created.Status)
+		created.LeaveAdjustmentId, created.LeaveStatus)
 
 	// --- List pending leave applications ---
 	fmt.Println("\n=== Pending Leave Applications ===")
 	pendingQuery := payspace.NewQuery().
-		Filter("Status eq 'Pending'").
+		Filter("LeaveStatus eq 'Pending'").
 		Top(10)
 
 	applications, _, err := client.EmployeeLeave.ListLeaveApplications(ctx, companyID, pendingQuery)
@@ -109,10 +109,10 @@ func main() {
 
 	for _, app := range applications {
 		days := 0.0
-		if app.NumberOfDays != nil {
-			days = *app.NumberOfDays
+		if app.NoOfDays != nil {
+			days = *app.NoOfDays
 		}
 		fmt.Printf("  %s: %s %s - %s (%.0f days) [%s]\n",
-			app.EmployeeNumber, app.LeaveType, app.StartDate, app.EndDate, days, app.Status)
+			app.EmployeeNumber, app.LeaveType, app.LeaveStartDate, app.LeaveEndDate, days, app.LeaveStatus)
 	}
 }
