@@ -99,6 +99,7 @@ func (tm *tokenManager) refresh(ctx context.Context) (string, error) {
 	tm.logger.Info("refreshing access token", zap.String("identity_url", tm.identityURL))
 
 	form := url.Values{}
+	form.Set("grant_type", "client_credentials")
 	form.Set("client_id", tm.clientID)
 	form.Set("client_secret", tm.clientSecret)
 	form.Set("scope", string(tm.scope))

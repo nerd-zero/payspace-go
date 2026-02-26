@@ -133,7 +133,7 @@ func TestEmployeeLeaveService_ListApplications(t *testing.T) {
 	mux.HandleFunc("GET /odata/v2.0/1/EmployeeLeaveApplication", func(w http.ResponseWriter, r *http.Request) {
 		days := 5.0
 		writeODataList(w, []EmployeeLeaveApplication{
-			{LeaveApplicationId: 1, EmployeeNumber: "EMP001", LeaveType: "Annual", NumberOfDays: &days, Status: "Approved"},
+			{LeaveAdjustmentId: 1, EmployeeNumber: "EMP001", LeaveType: "Annual", NoOfDays: &days, LeaveStatus: "Approved"},
 		})
 	})
 	_, client := testServerAndClient(t, mux)
@@ -148,8 +148,8 @@ func TestEmployeeLeaveService_ListApplications(t *testing.T) {
 	if len(apps) != 1 {
 		t.Fatalf("expected 1 application, got %d", len(apps))
 	}
-	if apps[0].Status != "Approved" {
-		t.Errorf("expected Status=Approved, got %s", apps[0].Status)
+	if apps[0].LeaveStatus != "Approved" {
+		t.Errorf("expected LeaveStatus=Approved, got %s", apps[0].LeaveStatus)
 	}
 }
 
@@ -164,8 +164,8 @@ func TestEmployeeLeaveService_CreateApplication(t *testing.T) {
 		if body.LeaveType != "Sick" {
 			t.Errorf("expected LeaveType=Sick, got %s", body.LeaveType)
 		}
-		body.LeaveApplicationId = 30
-		body.Status = "Pending"
+		body.LeaveAdjustmentId = 30
+		body.LeaveStatus = "Pending"
 		writeJSON(w, http.StatusCreated, body)
 	})
 	_, client := testServerAndClient(t, mux)
@@ -174,9 +174,9 @@ func TestEmployeeLeaveService_CreateApplication(t *testing.T) {
 	input := &EmployeeLeaveApplication{
 		EmployeeNumber: "EMP001",
 		LeaveType:      "Sick",
-		StartDate:      "2024-06-10",
-		EndDate:        "2024-06-11",
-		NumberOfDays:   &days,
+		LeaveStartDate: "2024-06-10",
+		LeaveEndDate:   "2024-06-11",
+		NoOfDays:       &days,
 	}
 	created, resp, err := client.EmployeeLeave.CreateLeaveApplication(context.Background(), 1, input)
 	if err != nil {
@@ -185,11 +185,11 @@ func TestEmployeeLeaveService_CreateApplication(t *testing.T) {
 	if resp.StatusCode != http.StatusCreated {
 		t.Fatalf("expected 201, got %d", resp.StatusCode)
 	}
-	if created.LeaveApplicationId != 30 {
-		t.Errorf("expected LeaveApplicationId=30, got %d", created.LeaveApplicationId)
+	if created.LeaveAdjustmentId != 30 {
+		t.Errorf("expected LeaveAdjustmentId=30, got %d", created.LeaveAdjustmentId)
 	}
-	if created.Status != "Pending" {
-		t.Errorf("expected Status=Pending, got %s", created.Status)
+	if created.LeaveStatus != "Pending" {
+		t.Errorf("expected LeaveStatus=Pending, got %s", created.LeaveStatus)
 	}
 }
 
