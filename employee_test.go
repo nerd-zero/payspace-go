@@ -277,7 +277,7 @@ func TestEmployeeService_ListPositions(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /odata/v2.0/1/EmployeePosition", func(w http.ResponseWriter, r *http.Request) {
 		writeODataList(w, []EmployeePosition{
-			{EmployeePositionId: 1, EmployeeNumber: "EMP001", JobTitle: "Developer"},
+			{EmployeePositionId: 1, EmployeeNumber: "EMP001", OrganizationPosition: "Developer"},
 		})
 	})
 	_, client := testServerAndClient(t, mux)
@@ -292,8 +292,8 @@ func TestEmployeeService_ListPositions(t *testing.T) {
 	if len(positions) != 1 {
 		t.Fatalf("expected 1 position, got %d", len(positions))
 	}
-	if positions[0].JobTitle != "Developer" {
-		t.Errorf("expected JobTitle=Developer, got %s", positions[0].JobTitle)
+	if positions[0].OrganizationPosition != "Developer" {
+		t.Errorf("expected OrganizationPosition=Developer, got %s", positions[0].OrganizationPosition)
 	}
 }
 
@@ -302,15 +302,15 @@ func TestEmployeeService_CreatePosition(t *testing.T) {
 	mux.HandleFunc("POST /odata/v2.0/1/EmployeePosition", func(w http.ResponseWriter, r *http.Request) {
 		var body EmployeePosition
 		json.NewDecoder(r.Body).Decode(&body)
-		if body.JobTitle != "Manager" {
-			t.Errorf("expected JobTitle=Manager, got %s", body.JobTitle)
+		if body.OrganizationPosition != "Manager" {
+			t.Errorf("expected OrganizationPosition=Manager, got %s", body.OrganizationPosition)
 		}
 		body.EmployeePositionId = 20
 		writeJSON(w, http.StatusCreated, body)
 	})
 	_, client := testServerAndClient(t, mux)
 
-	input := &EmployeePosition{EmployeeNumber: "EMP001", JobTitle: "Manager"}
+	input := &EmployeePosition{EmployeeNumber: "EMP001", OrganizationPosition: "Manager"}
 	created, resp, err := client.Employees.CreatePosition(context.Background(), 1, input)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -330,7 +330,7 @@ func TestEmployeeService_UpdatePosition(t *testing.T) {
 	})
 	_, client := testServerAndClient(t, mux)
 
-	resp, err := client.Employees.UpdatePosition(context.Background(), 1, 20, &EmployeePosition{JobTitle: "Senior Manager"})
+	resp, err := client.Employees.UpdatePosition(context.Background(), 1, 20, &EmployeePosition{OrganizationPosition: "Senior Manager"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
