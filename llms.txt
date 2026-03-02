@@ -1,0 +1,280 @@
+# payspace-go
+
+> Go client library for the Deel Local Payroll (PaySpace) API v2.0. Provides OAuth 2.0 authentication with automatic token refresh, a fluent OData query builder, automatic rate limiting, retries with exponential backoff, and structured logging via zap. Import path: `github.com/nerd-zero/payspace-go`. Package name: `payspace`. Requires Go 1.25+.
+
+## Installation
+
+```bash
+go get github.com/nerd-zero/payspace-go
+```
+
+## Client Initialization
+
+Create a client with `NewClient(clientID, clientSecret string, opts ...Option) (*Client, error)`. Authentication is lazy (first API call) or eager via `client.Authenticate(ctx)`. All API methods follow `client.ServiceName.Method(ctx, companyID, ...)`.
+
+```go
+client, err := payspace.NewClient("id", "secret",
+    payspace.WithEnvironment(payspace.Production),
+    payspace.WithScope(payspace.ScopeFullAccess),
+    payspace.WithTimeout(30 * time.Second),
+    payspace.WithRetry(3, 500 * time.Millisecond),
+    payspace.WithRateLimitWait(true),
+    payspace.WithLogLevel(zapcore.WarnLevel),
+)
+```
+
+### Environments
+
+- `payspace.Staging` — `apistaging.payspace.com` / `staging-identity.yourhcm.com` (default)
+- `payspace.Production` — `api.payspace.com` / `identity.yourhcm.com`
+
+### Scopes
+
+- `payspace.ScopeFullAccess` (default), `payspace.ScopeReadOnly`, `payspace.ScopeUpdate`, `payspace.ScopeCreate`
+
+### Options
+
+- `WithEnvironment(env Environment)` — Staging or Production
+- `WithScope(scope Scope)` — API access scope
+- `WithTimeout(d time.Duration)` — HTTP timeout (default 30s)
+- `WithRetry(maxRetries int, backoff time.Duration)` — retry config (default 3, 500ms)
+- `WithRateLimitWait(wait bool)` — auto-wait on 429 (default true)
+- `WithLogLevel(level zapcore.Level)` — minimum log level
+- `WithLogger(logger *zap.Logger)` — custom logger
+- `WithHTTPClient(client *http.Client)` — custom HTTP client
+- `WithAPIVersion(ver string)` — API version (default "v2.0")
+- `WithUserAgent(ua string)` — User-Agent header
+- `WithAPIBaseURL(url string)` — override API base URL
+- `WithIdentityURL(url string)` — override identity URL
+
+## Authentication
+
+OAuth 2.0 client credentials flow. Tokens auto-refresh 5 minutes before expiry. Thread-safe.
+
+- `client.Authenticate(ctx) error` — eagerly authenticate
+- `client.GroupCompanies(ctx) ([]GroupCompany, error)` — list accessible companies (authenticates if needed)
+- `client.TokenInfo() (expiresAt time.Time, hasToken bool)` — token metadata
+
+### Types
+
+- `GroupCompany` — `GroupID int`, `GroupDescription string`, `Companies []Company`
+- `Company` — `CompanyID int`, `CompanyName string`, `CompanyCode string`
+
+## Services
+
+### Employees (`client.Employees`)
+
+Methods: `List`, `ListByEffectiveDate`, `ListAll`, `Get`, `Create`, `Update`
+
+Types:
+- `Employee` — `EmployeeId`, `EmployeeNumber`, `Title`, `FirstName`, `Surname`, `KnownAs`, `Initials`, `MiddleName`, `MaidenName`, `DateOfBirth`, `Gender`, `EmailAddress`, `IdentityNumber`, `Language`, `MaritalStatus`, `Nationality`, `WorkNumber`, `HomeNumber`, `CellNumber`, `Custom1`–`Custom10`
+- `EmployeeAddress` — `AddressId`, `EmployeeNumber`, `AddressType`, `AddressLine1`–`4`, `PostalCode`, `Country`
+- `EmployeeEmploymentStatus` — `EmploymentStatusId`, `EmployeeNumber`, `EmploymentDate`, `TerminationDate`, `TerminationReason`, `EmploymentAction`, `EncashLeave *bool`, `EmploymentStatus`, `PayrollNumber`, `ReEmploymentDate`
+- `EmployeePosition` — `EmployeePositionId`, `OrganizationPositionId`, `EmployeeNumber`, `FullName`, `EffectiveDate`, `PositionEffectiveDate`, `OrganizationPosition`, `OrganizationPositionWithCode`, `PositionType`, `Grade`, `OccupationalLevel`, `DirectlyReportsPositionOverride`, `DirectlyReportsPosition`, `DirectlyReportsEmployee`, `DirectlyReportsEmployeeNumber`, `OrganizationGroup`, `OrganizationGroupDescription`, `OrganizationRegion`, `PayPoint`, `EmploymentCategory`, `EmploymentSubCategory`, `Administrator`, `AdministratorEmployeeNumber`, `WorkflowRole`, `GeneralLedger`, `TradeUnion`, `CustomTradeUnion`, `IsPromotion *bool`, `Roster`, `Job`, `Comments`, `AltPositionName`
+
+Address methods: `ListAddresses`, `GetAddress`, `CreateAddress`, `UpdateAddress`
+Employment status methods: `ListEmploymentStatuses`, `ListEmploymentStatusesByEffectiveDate`, `ListAllEmploymentStatuses`, `GetEmploymentStatus`, `CreateEmploymentStatus`, `UpdateEmploymentStatus`
+Position methods: `ListPositions`, `ListPositionsByEffectiveDate`, `ListAllPositions`, `GetPosition`, `CreatePosition`, `UpdatePosition`
+
+### Employee Payroll (`client.EmployeePayroll`)
+
+Types:
+- `EmployeePayRate` — `PayRateId`, `EmployeeNumber`, `BasicSalary *float64`, `AnnualSalary *float64`, `HourlyRate *float64`, `DailyRate *float64`, `EffectiveDate`, `PayFrequency`, `PayType`
+- `EmployeeBonusProvision` — `BonusProvisionId`, `EmployeeNumber`, `ComponentCode`, `Description`, `Amount *float64`, `Percentage *float64`, `EffectiveDate`
+- `EmployeeComponent` — `ComponentId`, `EmployeeNumber`, `ComponentCode`, `Description`, `Amount *float64`, `Percentage *float64`, `Value *float64`, `EffectiveDate`
+- `EmployeeMedical` — `MedicalId`, `EmployeeNumber`, `MedicalAidScheme`, `MedicalAidPlan`, `MemberNumber`, `Amount *float64`, `EffectiveDate`
+- `EmployeePensionFund` — `PensionFundId`, `EmployeeNumber`, `ComponentCode`, `Description`, `EmployeeAmount *float64`, `CompanyAmount *float64`, `EmployeePercentage *float64`, `CompanyPercentage *float64`, `EffectiveDate`
+- `EmployeeLoan` — `LoanId`, `EmployeeNumber`, `ComponentCode`, `Description`, `Amount *float64`, `Balance *float64`, `Instalment *float64`, `EffectiveDate`
+- `EmployeeGarnishee` — `GarnisheeId`, `EmployeeNumber`, `ComponentCode`, `Description`, `Amount *float64`, `Balance *float64`, `EffectiveDate`
+- `EmployeeRetirementAnnuity` — `RetirementAnnuityId`, `EmployeeNumber`, `ComponentCode`, `Description`, `Amount *float64`, `Percentage *float64`, `EffectiveDate`
+
+Each type has `List`, `Get`, `Create`, `Update` methods. Pay rates also have `ListByEffectiveDate` and `ListAll`.
+
+### Employee Payslips (`client.EmployeePayslips`)
+
+Types:
+- `EmployeePayslip` — `PayslipId`, `Year`, `Month`, `Period int`, `EmployeeNumber`, `Frequency`, `PayDate`, `FirstName`, `Surname`, `GrossPay *float64`, `NetPay *float64`, `TotalDeductions *float64`, `TotalCompany *float64`
+- `EmployeePayslipLine` — `PayslipLineId`, `Year`, `Month int`, `EmployeeNumber`, `ComponentCode`, `Description`, `Amount *float64`, `LineType`
+- `EmployeeCostedPayslipLine` — `CostedPayslipLineId`, `Year`, `Month int`, `EmployeeNumber`, `ComponentCode`, `Description`, `CostCentre`, `Amount *float64`
+- `EmployeePayslipPdf` — `PayslipPdfId`, `Year`, `Month int`, `EmployeeNumber`, `PdfContent`
+- `EditPayslip` — `EditPayslipId int`, `EmployeeNumber`, `ComponentCode`, `Description`, `Amount *float64`, `Value *float64`, `Hours *float64`, `Days *float64`, `LineType`
+- `EmployeePayslipTakeOn` — `PayslipTakeOnId int`, `EmployeeNumber`, `ComponentCode`, `Description`, `Amount *float64`, `EffectiveDate`
+- `EmployeeLumpSum` — `LumpSumId int`, `EmployeeNumber`, `ComponentCode`, `Description`, `Amount *float64`, `EffectiveDate`
+- `EmployeeTaxCertificate` — `TaxCertificateId int`, `EmployeeNumber`, `TaxYear int`, `CertificateType`, `IssueDate`, `PdfContent`
+
+Payslip methods use `Param("frequency", "1")` and `Param("period", "6")` query params.
+
+### Employee Leave (`client.EmployeeLeave`)
+
+Types:
+- `EmployeeLeaveAdjustment` — `LeaveAdjustmentId`, `EmployeeNumber`, `LeaveType`, `AdjustmentDate`, `Reason`, `AdjustmentValue *float64`
+- `EmployeeLeaveSetup` — `LeaveSetupId`, `EmployeeNumber`, `LeaveType`, `Entitlement *float64`, `Balance *float64`, `AccrualMethod`, `CycleStartDate`, `CycleEndDate`
+- `EmployeeLeaveSetupEntitlement` — `LeaveSetupEntitlementId`, `EmployeeNumber`, `LeaveType`, `Entitlement *float64`, `EffectiveDate`
+- `EmployeeLeaveApplication` — `LeaveAdjustmentId`, `EmployeeNumber`, `FullName`, `LeaveBucket`, `LeaveType`, `LeaveCompanyRun`, `Comments`, `Reference`, `LeaveReason`, `NoOfDays *float64`, `LeaveStartDate`, `LeaveEndDate`, `LeaveStatus`, `LeaveTransactionType`
+
+### Employee Suspensions (`client.EmployeeSuspensions`)
+
+Type: `EmployeeSuspension` — `SuspensionId`, `EmployeeNumber`, `SuspensionDate`, `SuspensionReason`, `SuspensionStatus`, `ReturnDate`, `PaymentMethod`
+Methods: `List`, `Get`, `Create`, `Update`
+
+### Employee Other (`client.EmployeeOther`)
+
+Types:
+- `EmployeeOutOfOffice` — `OutOfOfficeId`, `EmployeeNumber`, `StartDate`, `EndDate`, `Reason`, `Status`
+- `EmployeeNote` — `NoteId`, `EmployeeNumber`, `NoteDate`, `NoteType`, `Subject`, `NoteText`, `CreatedBy`
+- `EmployeeCustomForm` — `CustomFormId`, `EmployeeNumber`, `FormName`, `FormData`, `EffectiveDate`
+
+### Employee Skills (`client.EmployeeSkills`)
+
+Types:
+- `EmployeeTraining` — `TrainingId`, `EmployeeNumber`, `CourseName`, `CourseProvider`, `StartDate`, `EndDate`, `Status`, `Result`, `ExpiryDate`, `Cost`
+- `EmployeeQualification` — `QualificationId`, `EmployeeNumber`, `QualificationType`, `Description`, `Institution`, `DateObtained`, `ExpiryDate`
+- `EmployeeSkill` — `SkillId`, `EmployeeNumber`, `SkillName`, `SkillLevel`, `YearsExperience`, `DateAssessed`
+
+### Employee Costing (`client.EmployeeCosting`)
+
+Types:
+- `EmployeeRecurringCostingSplit` — `CostingSplitId`, `EmployeeNumber`, `CostCentre`, `ComponentCode`, `Description`, `Percentage *float64`, `EffectiveDate`
+- `EmployeeRecurringCosting` — `RecurringCostingId`, `EmployeeNumber`, `CostCentre`, `ComponentCode`, `Description`, `Percentage *float64`, `EffectiveDate`
+
+### Employee Performance (`client.EmployeePerformance`)
+
+Read-only (v1.0 API). Types:
+- `EmployeeReviewHeader` — `ReviewHeaderId`, `EmployeeNumber`, `ReviewName`, `ReviewDate`, `ReviewStatus`, `ReviewerName`, `OverallScore`, `OverallRating`
+- `EmployeeReviewKpa` — `ReviewKpaId`, `ReviewHeaderId`, `EmployeeNumber`, `KpaName`, `Rating`, `Comment`, `Weight *float64`, `Score *float64`
+- `EmployeeReviewTemplate` — `ReviewTemplateId`, `TemplateName`, `Description`, `Status`
+
+### Companies (`client.Companies`)
+
+Types:
+- `CompanyDocument` — `DocumentId`, `Year`, `Month int`, `EmployeeNumber`, `DocumentTotal *float64`, `VatTotal *float64`
+- `CompanyDocumentLine` — `DocumentLineId`, `DocumentId int`, `Description`, `Amount *float64`, `VatAmount *float64`
+- `CompanyCustomForm` — `CustomFormId int`, `EmployeeNumber`, `FormCategory`, `FormDescription`
+
+### Company Payroll (`client.CompanyPayroll`)
+
+Types:
+- `CompanyFrequency` — `FrequencyId int`, `Description`, `FrequencyCode`, `Periods int`
+- `CompanyRun` — `RunId`, `FrequencyId`, `Period`, `Year int`, `Status`, `Description`
+- `ComponentCompany` — `ComponentCompanyId int`, `ComponentCode`, `Description`, `ComponentType`
+
+### Company Config (`client.CompanyConfig`)
+
+Types:
+- `OrganizationPositionDetail` — `OrganizationPositionDetailId int`, `PositionCode`, `PositionDescription`, `Department`, `EffectiveDate`
+- `CompanyRegion` — `RegionId int`, `Description`, `RegionCode`
+- `GeneralLedger` — `GeneralLedgerId int`, `AccountCode`, `Description`, `Amount *float64`
+- `EFTOutbox` — `EftOutboxId int`, `EmployeeNumber`, `BankName`, `AccountNumber`, `Status`, `Amount *float64`
+- `CostingProjectActivity` — `ProjectActivityId int`, `ProjectCode`, `ActivityCode`, `Description`
+- `ComponentTableDefinition` — `TableDefinitionId int`, `TableName`, `Description`
+
+### Lookups (`client.Lookups`)
+
+30+ named lookup datasets accessible via typed methods (e.g., `ListGenders`, `ListMaritalStatuses`, `ListLanguages`, `ListNationalities`, `ListPayTypes`, `ListLeaveTypes`, etc.).
+
+Types:
+- `LookupValue` — `Id int`, `Code`, `Description`
+- `CustomField` — `CustomFieldId int`, `EntityType`, `FieldName`, `FieldType`, `Caption`
+- `CustomFieldOption` — `OptionId`, `FieldId int`, `Code`, `Description`
+
+### Metadata (`client.Metadata`)
+
+- `Get(ctx, companyID) (string, *Response, error)` — returns OData $metadata XML
+
+### File Upload (`client.FileUpload`)
+
+- `Upload(ctx, companyID, filename string, reader io.Reader) (*FileUploadResponse, *Response, error)`
+- `FileUploadResponse` — `TempAttachmentSignature string`
+
+### Webhooks (`client.Webhooks`)
+
+- `ListErrors(ctx, companyID, pageNumber, pageSize int) (*WebhookErrorResponse, *Response, error)`
+
+## OData Query Builder
+
+```go
+query := payspace.NewQuery().
+    Filter("Surname eq 'Smith'").
+    OrderBy("FirstName asc").
+    Top(10).
+    Skip(0).
+    Select("EmployeeNumber", "FirstName", "Surname").
+    Expand("OrganizationGroups").
+    Count().
+    Param("frequency", "1")
+```
+
+Methods: `Filter(expr)`, `Top(n)` (max 100), `Skip(n)`, `OrderBy(expr)`, `Select(fields...)`, `Expand(fields...)`, `Count()`, `Param(key, value)`, `Encode() string`.
+
+## Effective Date Queries
+
+Many entities support three listing variants:
+
+- `List(ctx, companyID, query)` — active records only
+- `ListByEffectiveDate(ctx, companyID, "2025-01-01", query)` — effective as of date
+- `ListAll(ctx, companyID, query)` — including inactive records
+
+Applies to: employees, employment statuses, positions, pay rates, leave setups, leave adjustments, leave applications, organization positions.
+
+## Response Types
+
+- `Response` — wraps `*http.Response` with `ODataContext string`, `ODataCount *int`, `RateLimit RateLimitInfo`
+- `ListResult[T any]` — `Context string`, `Count *int`, `Value []T`
+- `RateLimitInfo` — `Limit int`, `Remaining int`, `Reset time.Time`
+
+## Error Handling
+
+Types:
+- `APIError` — `StatusCode int`, `ODataCtx string`, `Message string`, `Details []ErrorDetail`, `Success *bool`
+- `RateLimitError` — embeds `*APIError`, adds `Limit int`, `Remaining int`, `Reset time.Time`
+- `ErrorDetail` — `Message string`
+
+Helper functions:
+- `IsNotFound(err) bool` — 404
+- `IsUnauthorized(err) bool` — 401
+- `IsRateLimited(err) bool` — 429
+- `IsValidationError(err) bool` — 400 with validation details
+
+## Rate Limiting
+
+Automatic by default. Tracks `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset` headers. Pre-emptively waits when remaining reaches 0. Reactively retries on 429. Disable with `WithRateLimitWait(false)`.
+
+## Retries
+
+Automatic exponential backoff for 5xx errors, network errors, and 401 (triggers token refresh). Default: 3 retries, 500ms base backoff. Configure with `WithRetry(maxRetries, backoff)`.
+
+## Logging
+
+Uses zap structured logging. Configure level with `WithLogLevel(level)` or provide a custom logger with `WithLogger(logger)`. Create loggers with `NewLogger(LoggerConfig{Level, Development, OutputPaths})`.
+
+## Source Files
+
+- [payspace.go](https://github.com/nerd-zero/payspace-go/blob/main/payspace.go): Client struct, initialization, HTTP helpers
+- [auth.go](https://github.com/nerd-zero/payspace-go/blob/main/auth.go): OAuth 2.0 token management
+- [options.go](https://github.com/nerd-zero/payspace-go/blob/main/options.go): Functional option definitions
+- [odata.go](https://github.com/nerd-zero/payspace-go/blob/main/odata.go): OData query builder
+- [errors.go](https://github.com/nerd-zero/payspace-go/blob/main/errors.go): Error types and helpers
+- [transport.go](https://github.com/nerd-zero/payspace-go/blob/main/transport.go): HTTP middleware chain (auth, logging, retry, rate limit)
+- [logging.go](https://github.com/nerd-zero/payspace-go/blob/main/logging.go): Logger factory
+- [ratelimit.go](https://github.com/nerd-zero/payspace-go/blob/main/ratelimit.go): Rate limit tracker
+- [employee.go](https://github.com/nerd-zero/payspace-go/blob/main/employee.go): Employee, address, employment status, position services
+- [employee_payroll.go](https://github.com/nerd-zero/payspace-go/blob/main/employee_payroll.go): Pay rates, bonuses, components, medical, pension, loans, garnishees
+- [employee_payslip.go](https://github.com/nerd-zero/payspace-go/blob/main/employee_payslip.go): Payslips, lines, PDFs, edits, take-ons, lump sums, tax certificates
+- [employee_leave.go](https://github.com/nerd-zero/payspace-go/blob/main/employee_leave.go): Leave adjustments, setups, entitlements, applications
+- [employee_suspension.go](https://github.com/nerd-zero/payspace-go/blob/main/employee_suspension.go): Suspension records
+- [employee_other.go](https://github.com/nerd-zero/payspace-go/blob/main/employee_other.go): Out-of-office, notes, custom forms
+- [employee_skills.go](https://github.com/nerd-zero/payspace-go/blob/main/employee_skills.go): Training, qualifications, skills
+- [employee_costing.go](https://github.com/nerd-zero/payspace-go/blob/main/employee_costing.go): Costing splits, recurring costings
+- [employee_performance.go](https://github.com/nerd-zero/payspace-go/blob/main/employee_performance.go): Performance reviews (read-only, v1.0)
+- [company.go](https://github.com/nerd-zero/payspace-go/blob/main/company.go): Billing documents, custom forms
+- [company_payroll.go](https://github.com/nerd-zero/payspace-go/blob/main/company_payroll.go): Frequencies, runs, company components
+- [company_config.go](https://github.com/nerd-zero/payspace-go/blob/main/company_config.go): Organization positions, regions, GL, EFT, costing, component tables
+- [lookup.go](https://github.com/nerd-zero/payspace-go/blob/main/lookup.go): 30+ lookup datasets, custom fields
+- [metadata.go](https://github.com/nerd-zero/payspace-go/blob/main/metadata.go): OData $metadata retrieval
+- [fileupload.go](https://github.com/nerd-zero/payspace-go/blob/main/fileupload.go): Multipart file uploads
+- [webhook.go](https://github.com/nerd-zero/payspace-go/blob/main/webhook.go): Webhook error listing
+
+## Optional
+
+- [README.md](https://github.com/nerd-zero/payspace-go/blob/main/README.md): Full documentation with examples
+- [examples/](https://github.com/nerd-zero/payspace-go/tree/main/examples): Runnable example programs
