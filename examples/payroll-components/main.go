@@ -49,7 +49,7 @@ func main() {
 
 	// --- List payroll runs ---
 	fmt.Println("\n=== Payroll Runs ===")
-	runs, _, err := client.CompanyPayroll.ListRuns(ctx, companyID, nil)
+	runs, _, err := client.CompanyPayroll.ListRuns(ctx, companyID, 1, nil)
 	if err != nil {
 		log.Fatalf("Failed to list runs: %v", err)
 	}

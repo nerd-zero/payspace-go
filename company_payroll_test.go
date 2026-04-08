@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
-	"strings"
 	"testing"
 )
 
@@ -47,7 +46,7 @@ func TestCompanyPayrollService_ListRuns(t *testing.T) {
 	})
 	_, client := testServerAndClient(t, mux)
 
-	runs, resp, err := client.CompanyPayroll.ListRuns(context.Background(), 1, nil)
+	runs, resp, err := client.CompanyPayroll.ListRuns(context.Background(), 1, 1, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -65,9 +64,9 @@ func TestCompanyPayrollService_ListRuns(t *testing.T) {
 func TestCompanyPayrollService_ListRunsByFrequency(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /odata/v2.0/1/Lookup/CompanyRun", func(w http.ResponseWriter, r *http.Request) {
-		filter := r.URL.Query().Get("$filter")
-		if !strings.Contains(filter, "FrequencyId eq 2") {
-			t.Errorf("expected filter to contain 'FrequencyId eq 2', got %q", filter)
+		freq := r.URL.Query().Get("frequency")
+		if freq != "2" {
+			t.Errorf("expected frequency query param '2', got %q", freq)
 		}
 		writeODataList(w, []CompanyRun{
 			{RunId: 200, FrequencyId: 2, Period: 1, Year: 2024, Status: "Open"},
@@ -75,7 +74,7 @@ func TestCompanyPayrollService_ListRunsByFrequency(t *testing.T) {
 	})
 	_, client := testServerAndClient(t, mux)
 
-	runs, resp, err := client.CompanyPayroll.ListRunsByFrequency(context.Background(), 1, 2, nil)
+	runs, resp, err := client.CompanyPayroll.ListRuns(context.Background(), 1, 2, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
