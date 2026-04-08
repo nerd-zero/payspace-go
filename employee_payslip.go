@@ -59,15 +59,22 @@ type EmployeePayslipPdf struct {
 
 // EditPayslip represents an editable payslip record.
 type EditPayslip struct {
-	EditPayslipId  int      `json:"EditPayslipId"`
-	EmployeeNumber string   `json:"EmployeeNumber"`
-	ComponentCode  string   `json:"ComponentCode,omitempty"`
-	Description    string   `json:"Description,omitempty"`
-	Amount         *float64 `json:"Amount,omitempty"`
-	Value          *float64 `json:"Value,omitempty"`
-	Hours          *float64 `json:"Hours,omitempty"`
-	Days           *float64 `json:"Days,omitempty"`
-	LineType       string   `json:"LineType,omitempty"`
+	EditPayslipId          int      `json:"EditPayslipId"`
+	EmployeeNumber         string   `json:"EmployeeNumber"`
+	FullName               string   `json:"FullName,omitempty"`
+	ComponentCode          string   `json:"ComponentCode,omitempty"`
+	Description            string   `json:"Description,omitempty"`
+	InputType              string   `json:"InputType,omitempty"`
+	InputValue             *float64 `json:"InputValue,omitempty"`
+	Amount                 *float64 `json:"Amount,omitempty"`
+	Value                  *float64 `json:"Value,omitempty"`
+	Hours                  *float64 `json:"Hours,omitempty"`
+	Days                   *float64 `json:"Days,omitempty"`
+	LineType               string   `json:"LineType,omitempty"`
+	CostCentreCode         string   `json:"CostCentreCode,omitempty"`
+	Comments               string   `json:"Comments,omitempty"`
+	RecoveryAmount         *float64 `json:"RecoveryAmount,omitempty"`
+	RecoveryAmountOverride *float64 `json:"RecoveryAmountOverride,omitempty"`
 }
 
 // EmployeePayslipTakeOn represents a payslip take-on record.

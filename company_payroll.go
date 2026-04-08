@@ -9,20 +9,28 @@ import (
 
 // CompanyFrequency represents a payroll frequency configuration for a company.
 type CompanyFrequency struct {
-	FrequencyId   int    `json:"FrequencyId"`
-	Description   string `json:"Description,omitempty"`
-	FrequencyCode string `json:"FrequencyCode,omitempty"`
-	Periods       int    `json:"Periods,omitempty"`
+	FrequencyId            int    `json:"FrequencyId"`
+	Description            string `json:"Description,omitempty"`
+	FrequencyCode          string `json:"FrequencyCode,omitempty"`
+	Periods                int    `json:"Periods,omitempty"`
+	CurrentPeriodInTaxYear int    `json:"CurrentPeriodInTaxYear,omitempty"`
+	TotalPeriodsInTaxYear  int    `json:"TotalPeriodsInTaxYear,omitempty"`
 }
 
 // CompanyRun represents a payroll run within a company.
 type CompanyRun struct {
-	RunId       int    `json:"RunId"`
-	FrequencyId int    `json:"FrequencyId,omitempty"`
-	Period      int    `json:"Period,omitempty"`
-	Year        int    `json:"Year,omitempty"`
-	Status      string `json:"Status,omitempty"`
-	Description string `json:"Description,omitempty"`
+	RunId            int    `json:"RunId"`
+	FrequencyId      int    `json:"FrequencyId,omitempty"`
+	Period           int    `json:"Period,omitempty"`
+	Year             int    `json:"Year,omitempty"`
+	Status           string `json:"Status,omitempty"`
+	Description      string `json:"Description,omitempty"`
+	OrderNumber      int    `json:"OrderNumber,omitempty"`
+	RunStatus        int    `json:"RunStatus,omitempty"`
+	IsMainRun        bool   `json:"IsMainRun,omitempty"`
+	PeriodStartDate  string `json:"PeriodStartDate,omitempty"`
+	PeriodEndDate    string `json:"PeriodEndDate,omitempty"`
+	PayDate          string `json:"PayDate,omitempty"`
 }
 
 // ComponentCompany represents a payroll component configured at the company level.
@@ -54,39 +62,21 @@ func (s *CompanyPayrollService) ListFrequencies(ctx context.Context, companyID i
 	return result.Value, resp, nil
 }
 
-// ListRuns retrieves all payroll runs for a company.
-func (s *CompanyPayrollService) ListRuns(ctx context.Context, companyID int, params *QueryParams) ([]CompanyRun, *Response, error) {
-	s.client.logger.Info("listing company runs", zap.Int("company_id", companyID))
+// ListRuns retrieves all payroll runs for a company and frequency.
+// The frequency parameter is the FrequencyId from ListFrequencies.
+func (s *CompanyPayrollService) ListRuns(ctx context.Context, companyID, frequency int, params *QueryParams) ([]CompanyRun, *Response, error) {
+	s.client.logger.Info("listing company runs",
+		zap.Int("company_id", companyID),
+		zap.Int("frequency", frequency),
+	)
 	if params != nil {
 		s.client.logger.Debug("list company runs query params", zap.String("params", params.Encode()))
 	}
 
-	url := s.client.odataURL(companyID, "Lookup/CompanyRun")
-	var result ListResult[CompanyRun]
-	resp, err := s.client.getAndDecode(ctx, url, params, &result)
-	if err != nil {
-		return nil, resp, err
-	}
-	return result.Value, resp, nil
-}
-
-// ListRunsByFrequency retrieves payroll runs filtered by frequency ID.
-func (s *CompanyPayrollService) ListRunsByFrequency(ctx context.Context, companyID, frequencyID int, params *QueryParams) ([]CompanyRun, *Response, error) {
-	s.client.logger.Info("listing company runs by frequency",
-		zap.Int("company_id", companyID),
-		zap.Int("frequency_id", frequencyID),
-	)
-
-	// Build a filter for the frequency ID and merge with any existing params.
-	filterExpr := fmt.Sprintf("FrequencyId eq %d", frequencyID)
-	if params == nil {
-		params = NewQuery()
-	}
-	params = params.Filter(filterExpr)
-
-	s.client.logger.Debug("list company runs by frequency query params", zap.String("params", params.Encode()))
-
-	url := s.client.odataURL(companyID, "Lookup/CompanyRun")
+	baseURL := s.client.odataURL(companyID, "Lookup/CompanyRun")
+	url := addQueryParams(baseURL, map[string]string{
+		"frequency": fmt.Sprintf("%d", frequency),
+	})
 	var result ListResult[CompanyRun]
 	resp, err := s.client.getAndDecode(ctx, url, params, &result)
 	if err != nil {

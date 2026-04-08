@@ -75,6 +75,7 @@ type Client struct {
 	Lookups             *LookupService
 	Metadata            *MetadataService
 	FileUpload          *FileUploadService
+	EmployeeAttachments *EmployeeAttachmentService
 	Webhooks            *WebhookService
 
 	httpClient  *http.Client
@@ -166,6 +167,7 @@ func (c *Client) initServices() {
 	c.EmployeeSkills = &EmployeeSkillsService{client: c}
 	c.EmployeeCosting = &EmployeeCostingService{client: c}
 	c.EmployeePerformance = &EmployeePerformanceService{client: c}
+	c.EmployeeAttachments = &EmployeeAttachmentService{client: c}
 	c.Companies = &CompanyService{client: c}
 	c.CompanyPayroll = &CompanyPayrollService{client: c}
 	c.CompanyConfig = &CompanyConfigService{client: c}
@@ -236,7 +238,11 @@ func (c *Client) do(ctx context.Context, req *http.Request) (*Response, error) {
 // get performs a GET request.
 func (c *Client) get(ctx context.Context, rawURL string, query *QueryParams) (*Response, error) {
 	if query != nil {
-		rawURL = rawURL + "?" + query.Encode()
+		sep := "?"
+		if strings.Contains(rawURL, "?") {
+			sep = "&"
+		}
+		rawURL = rawURL + sep + query.Encode()
 	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rawURL, nil)
 	if err != nil {
