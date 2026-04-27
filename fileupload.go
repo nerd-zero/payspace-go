@@ -30,7 +30,7 @@ func (s *FileUploadService) Upload(ctx context.Context, companyID int, filename 
 		zap.String("filename", filename),
 	)
 
-	url := s.client.apiURL(companyID, "FileUpload")
+	url := s.client.odataURL(companyID, "FileUpload")
 
 	// Build multipart form data.
 	var buf bytes.Buffer
