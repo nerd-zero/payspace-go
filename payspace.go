@@ -192,6 +192,19 @@ func (c *Client) apiURL(companyID int, path string) string {
 	return fmt.Sprintf("%s/%s/%d/%s", c.apiBaseURL, c.apiVersion, companyID, path)
 }
 
+// ListODataRaw fetches an OData entity collection as raw JSON objects, preserving
+// every property — including custom fields that the typed structs omit. Useful when
+// a tenant exposes custom columns (e.g. position-level fields) not in the SDK models.
+func (c *Client) ListODataRaw(ctx context.Context, companyID int, entity string, params *QueryParams) ([]map[string]any, *Response, error) {
+	url := c.odataURL(companyID, entity)
+	var result ListResult[map[string]any]
+	resp, err := c.getAndDecode(ctx, url, params, &result)
+	if err != nil {
+		return nil, resp, err
+	}
+	return result.Value, resp, nil
+}
+
 // Response wraps an http.Response and includes common PaySpace metadata.
 type Response struct {
 	*http.Response

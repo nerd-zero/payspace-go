@@ -13,13 +13,13 @@ type Employee struct {
 	EmployeeNumber string `json:"EmployeeNumber"`
 	Title          string `json:"Title,omitempty"`
 	FirstName      string `json:"FirstName,omitempty"`
-	Surname        string `json:"Surname,omitempty"`
-	KnownAs        string `json:"KnownAs,omitempty"`
+	Surname        string `json:"LastName,omitempty"`
+	KnownAs        string `json:"PreferredName,omitempty"`
 	Initials       string `json:"Initials,omitempty"`
-	DateOfBirth    string `json:"DateOfBirth,omitempty"`
+	DateOfBirth    string `json:"Birthday,omitempty"`
 	Gender         string `json:"Gender,omitempty"`
-	EmailAddress   string `json:"EmailAddress,omitempty"`
-	IdentityNumber string `json:"IdentityNumber,omitempty"`
+	EmailAddress   string `json:"Email,omitempty"`
+	IdentityNumber string `json:"SocialSecurityId,omitempty"`
 	Language       string `json:"Language,omitempty"`
 	MaritalStatus  string `json:"MaritalStatus,omitempty"`
 	Nationality    string `json:"Nationality,omitempty"`
