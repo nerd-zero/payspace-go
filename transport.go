@@ -2,6 +2,7 @@ package payspace
 
 import (
 	"context"
+	"fmt"
 	"math"
 	"net/http"
 	"time"
@@ -150,7 +151,11 @@ func (t *rateLimitTransport) RoundTrip(req *http.Request) (*http.Response, error
 		case <-req.Context().Done():
 			return nil, req.Context().Err()
 		}
-		return t.base.RoundTrip(req)
+		resend, err := rewound(req)
+		if err != nil {
+			return nil, err
+		}
+		return t.base.RoundTrip(resend)
 	}
 
 	return resp, nil
@@ -169,8 +174,10 @@ type retryTransport struct {
 func (t *retryTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	var resp *http.Response
 	var err error
+	retriable := !isNonIdempotent(req.Method)
 
 	for attempt := 0; attempt <= t.maxRetries; attempt++ {
+		send := req
 		if attempt > 0 {
 			wait := t.backoff * time.Duration(math.Pow(2, float64(attempt-1)))
 			t.logger.Warn("retrying request",
@@ -184,17 +191,21 @@ func (t *retryTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 			case <-req.Context().Done():
 				return nil, req.Context().Err()
 			}
+			if send, err = rewound(req); err != nil {
+				return nil, err
+			}
 		}
 
-		resp, err = t.base.RoundTrip(req)
+		resp, err = t.base.RoundTrip(send)
 		if err != nil {
-			if isRetryableError(err) {
+			if retriable && isRetryableError(err) {
 				continue
 			}
 			return nil, err
 		}
 
-		// 401: force token refresh and retry once
+		// 401: force token refresh and retry once. The server rejected the
+		// request before acting on it, so this is safe for writes too.
 		if resp.StatusCode == http.StatusUnauthorized && attempt == 0 {
 			resp.Body.Close()
 			t.logger.Warn("received 401, forcing token refresh")
@@ -205,8 +216,9 @@ func (t *retryTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 			continue
 		}
 
-		// 5xx: retry
-		if resp.StatusCode >= 500 {
+		// 5xx: retry, unless the write may already have been applied or no
+		// attempts are left (the caller then reads this response's body).
+		if resp.StatusCode >= 500 && retriable && attempt < t.maxRetries {
 			resp.Body.Close()
 			continue
 		}
@@ -215,6 +227,28 @@ func (t *retryTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	}
 
 	return resp, err
+}
+
+// isNonIdempotent reports whether repeating a request could apply it twice:
+// a POST creates another record, and PaySpace PATCHes can trigger workflows.
+// Such requests are never retried after the server may have received them.
+func isNonIdempotent(method string) bool {
+	return method == http.MethodPost || method == http.MethodPatch
+}
+
+// rewound returns a copy of req whose body starts from the beginning again,
+// so a re-sent request carries its full body rather than the drained one.
+func rewound(req *http.Request) (*http.Request, error) {
+	if req.Body == nil || req.GetBody == nil {
+		return req, nil
+	}
+	body, err := req.GetBody()
+	if err != nil {
+		return nil, fmt.Errorf("payspace: failed to rewind request body: %w", err)
+	}
+	resend := req.Clone(req.Context())
+	resend.Body = body
+	return resend, nil
 }
 
 func isRetryableError(err error) bool {

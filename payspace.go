@@ -205,6 +205,45 @@ func (c *Client) ListODataRaw(ctx context.Context, companyID int, entity string,
 	return result.Value, resp, nil
 }
 
+// GetODataRaw fetches one OData entity by its key as a raw JSON object, e.g.
+// Employee(5). Use it to read back a record after an update, which PaySpace
+// answers with 204 No Content.
+func (c *Client) GetODataRaw(ctx context.Context, companyID int, entity string, key int64) (map[string]any, *Response, error) {
+	var result map[string]any
+	resp, err := c.getAndDecode(ctx, c.odataKeyURL(companyID, entity, key), nil, &result)
+	if err != nil {
+		return nil, resp, err
+	}
+	return result, resp, nil
+}
+
+// CreateODataRaw POSTs body to an OData entity set and returns the created
+// entity as PaySpace acknowledged it. Writes are never retried on a server or
+// network error, since the record may already exist.
+func (c *Client) CreateODataRaw(ctx context.Context, companyID int, entity string, body map[string]any) (map[string]any, *Response, error) {
+	var result map[string]any
+	resp, err := c.postAndDecode(ctx, c.odataURL(companyID, entity), body, &result)
+	if err != nil {
+		return nil, resp, err
+	}
+	return result, resp, nil
+}
+
+// UpdateODataRaw PATCHes the fields in body onto one OData entity by its key.
+// PaySpace answers 204 No Content; read the record back with GetODataRaw.
+func (c *Client) UpdateODataRaw(ctx context.Context, companyID int, entity string, key int64, body map[string]any) (*Response, error) {
+	resp, err := c.patch(ctx, c.odataKeyURL(companyID, entity, key), body)
+	if err != nil {
+		return resp, err
+	}
+	resp.Body.Close()
+	return resp, nil
+}
+
+func (c *Client) odataKeyURL(companyID int, entity string, key int64) string {
+	return fmt.Sprintf("%s(%d)", c.odataURL(companyID, entity), key)
+}
+
 // Response wraps an http.Response and includes common PaySpace metadata.
 type Response struct {
 	*http.Response
