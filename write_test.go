@@ -210,6 +210,25 @@ func TestClient_UpdateODataRaw_PatchesKeyedEntity(t *testing.T) {
 	}
 }
 
+func TestClient_DeleteODataRaw_DeletesKeyedEntity(t *testing.T) {
+	var gotMethod, gotPath string
+	mux := http.NewServeMux()
+	mux.HandleFunc("/odata/v2.0/12/EmployeeDependant(31)", func(w http.ResponseWriter, r *http.Request) {
+		gotMethod, gotPath = r.Method, r.URL.Path
+		w.WriteHeader(http.StatusNoContent)
+	})
+	_, client := testServerAndClient(t, mux)
+
+	_, err := client.DeleteODataRaw(context.Background(), 12, "EmployeeDependant", 31)
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if gotMethod != http.MethodDelete || gotPath != "/odata/v2.0/12/EmployeeDependant(31)" {
+		t.Errorf("request = %s %s", gotMethod, gotPath)
+	}
+}
+
 func TestClient_GetODataRaw_ReturnsKeyedEntity(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /odata/v2.0/12/Employee(5)", func(w http.ResponseWriter, r *http.Request) {

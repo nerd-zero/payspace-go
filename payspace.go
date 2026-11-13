@@ -240,6 +240,17 @@ func (c *Client) UpdateODataRaw(ctx context.Context, companyID int, entity strin
 	return resp, nil
 }
 
+// DeleteODataRaw DELETEs one OData entity by its key, e.g.
+// EmployeeBankDetail(5), for entity sets without a typed Delete method.
+func (c *Client) DeleteODataRaw(ctx context.Context, companyID int, entity string, key int64) (*Response, error) {
+	resp, err := c.del(ctx, c.odataKeyURL(companyID, entity, key))
+	if err != nil {
+		return resp, err
+	}
+	resp.Body.Close()
+	return resp, nil
+}
+
 func (c *Client) odataKeyURL(companyID int, entity string, key int64) string {
 	return fmt.Sprintf("%s(%d)", c.odataURL(companyID, entity), key)
 }
